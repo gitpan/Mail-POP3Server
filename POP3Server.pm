@@ -1,7 +1,7 @@
 package Mail::POP3Server;
 
 #### This is the heart of the mpopd POP3 server
-# POP3Server.pm v2.21 14 March 2001
+# POP3Server.pm v2.22 25 July 2001
 # (c) Mark Tiramani 1998-2001 markjt@fredo.co.uk
 
 require Exporter;
@@ -23,9 +23,9 @@ $debug_log $debuglog_dir $end_message %forwardto $greeting $host_mail_path $host
 $mpopd_conf_version $mpopd_failed_mail $mpopd_pam_service $mpopd_pid_file $mpopd_spool
 $parse_to_disk $passsecret $password_plugin $path_to_homedir $path_to_maildir $receivedfrom
 $retry_on_lock $shadow $switch $timeout $timezone $trusted_networks $uidok $use_maildir
-$use_pam $user_log_dir $userlist $username_plugin %user_auth );
+$use_pam $user_log_dir $userlist $username_plugin %user_auth $status);
 
-$VERSION = "2.21";
+$VERSION = "2.22";
 
 my ($config_file,$port);
 sub ReadConfig {
@@ -92,7 +92,7 @@ my @COMMANDS = ("USER",
 my ( $paddr,$command,$arg,$arg1,$crypt_password,$debug_open,%delete,$delmessagecnt,
 	$deltotaloctets,%from_line,$initial,$lastaccess,$line,$maildir,@maildir,$messagecnt,
 	$mpopd,%octets,$opened,$openmod,$pass,$totaloctets,$uid,$uidl,%uidl,$user_id,
-	$ip,$fqdn,$zkids,%zkids,$input_fh,$output_fh);
+	$ip,$fqdn,$zkids,%zkids,$input_fh,$output_fh,%status);
 
 ############################################################
 #### The main POP3 routines are all enclosed within StartPOP3Server
@@ -776,6 +776,8 @@ sub commandRETR {
 					}
 					close SPOOL;
 					$> = $user_id;
+					# set the message status for the Status: header
+					$status{$arg} = "RO";
 				}
 				else {
 					foreach (@{"message".$arg}) {
@@ -1335,6 +1337,23 @@ sub TimeIsUp {
 						$| = 1;
 						print MAILBOX "$from_line{$cnt}\n";
 						open MPOPDMAIL, "$mpopd_spool/$uid/$mpopdspool[$cnt - 1]";
+						#### If Status: header is to be used
+						if ($status == 1) {
+							# first pull off the X-UIDL: header
+							$_ = <MPOPDMAIL>;
+							print MAILBOX "$_";
+							# next one should be the Status:
+							$_ = <MPOPDMAIL>;
+							if (/(Status: )([RO]){1,2}/ && $status{$cnt}) {
+								print MAILBOX "Status: $status{$cnt}\n";
+							}
+							elsif (/(Status: )([RO]){1,2}/) {
+								print MAILBOX "$_";
+							}
+							else {
+								print MAILBOX "Status: O\n";
+							}
+						}
 						while (<MPOPDMAIL>) {
 							print MAILBOX "$_";
 						}
@@ -1391,7 +1410,7 @@ sub UIDL {
 		$uidl = $1;
 		$uidl =~ s/\r|\n//g;
 		if ($parse_to_disk == 1) {
-			#### Create a new temp message, but don't add UIDL
+			#### Create a new temp message, but don't add X-UIDL header
 			&ParseToDisk("NO");
 		}
 		$uidl{"message".$messagecnt} = $uidl;
@@ -1399,7 +1418,7 @@ sub UIDL {
 	else {
 		$uidl = $uid.time.$messagecnt.$$;
 		if ($parse_to_disk == 1) {
-			#### Create a new temp message
+			#### Create a new temp message and add X-UIDL header
 			&ParseToDisk;
 		}
 		else {
@@ -1439,6 +1458,9 @@ sub ParseToDisk {
 	chmod 0600, "$mpopd_spool/$uid/$messagecnt";
 	unless ($no_uidl && $no_uidl eq "NO") {
 		print MESSAGE "X-UIDL: mpop$uidl\n" ;
+		if ($status == 1) {
+			print MESSAGE "Status: O\n" ;
+		}
 	}
 
 	$> = $user_id;
@@ -1727,7 +1749,7 @@ effect for subsequent child server processes.
 
 =head1 README
 
-You will need the full Mail-POP3Server-2.21.tar.gz kit if
+You will need the full Mail-POP3Server-2.22.tar.gz kit if
 this is the first time you have downloaded mpopd. The archive
 includes a sample config, access control file samples and a
 couple of tool/helper scripts.

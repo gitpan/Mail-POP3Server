@@ -1,17 +1,17 @@
 #!/usr/bin/perl
 
-# mpopd_test v0.03 24 February 2001
-$VERSION = "0.03";
+# mpopd_test v0.04 26 November 2001
+$VERSION = "0.04";
 # (c) Mark Tiramani 1998-2001 markjt@fredo.co.uk
 #
 # Test/benchmark a POP3 server.
 
 ####################  CONFIG  ####################
 
-$pop3_server = "194.164.46.4";
+$pop3_server = "192.168.0.1";
 $pop3_port = "110";
-$user_name = "markjt";
-$password = "7jE%w9";
+$user_name = "jbloggs";
+$password = "cryptic";
 $interval = "1";
 
 ##################################################

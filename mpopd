@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-# mpopd v2.21 14 March 2001
-my $VERSION = "2.21";
+# mpopd v2.22 26 November 2001
+my $VERSION = "2.22";
 # (c) Mark Tiramani 1998-2001 markjt@fredo.co.uk
 #
 # mpopd is a wrapper script for the Mail::POP3Server module

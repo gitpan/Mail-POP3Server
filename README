@@ -1,6 +1,6 @@
 
 
-Mail::POP3Server/mpopd v2.21 README, 19 March 2001
+Mail::POP3Server/mpopd v2.22 README, 26 November 2001
 
 	The mpopd wrapper script and Mail::POP3Server combined provide
 	a configurable POP3 server that runs either as a stand-alone
@@ -17,6 +17,8 @@ Mail::POP3Server/mpopd v2.21 README, 19 March 2001
 	POP3, and MDA's/LDA's (Mail Delivery Agents) work, and who
 	like to do things in Perl.
 
+	v2.22 Added 'Status: O[R]' header for webmail systems that track opened/
+			read messages (an IMAP function). Consider this UNTESTED!
 	v2.21 Turned the whole thing into a module with a wrapper:
 			Mail::POP3Server and mpopd
 	v2.20 tightened up command reading (uses eval'ed alarm and getc())
