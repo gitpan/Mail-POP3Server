@@ -1,0 +1,149 @@
+#!/usr/bin/perl
+
+# mpopd_test v0.03 24 February 2001
+$VERSION = "0.03";
+# (c) Mark Tiramani 1998-2001 markjt@fredo.co.uk
+#
+# Test/benchmark a POP3 server.
+
+####################  CONFIG  ####################
+
+$pop3_server = "194.164.46.4";
+$pop3_port = "110";
+$user_name = "markjt";
+$password = "7jE%w9";
+$interval = "1";
+
+##################################################
+
+#### Display the pod docs and exit
+if ($command =~ /^-{0,2}h/i || !$command) {
+	@user = getpwnam "mail";
+	$> = $user[2];
+	$< = $user[2] || die "Sorry, could not run perldoc for you\nPlease run perldoc mpopdctl\n\n";
+	system "perldoc mpopdctl";
+	exit(0);
+}
+
+use Socket;
+use Time::HiRes qw(gettimeofday sleep);
+use Getopt::Std;
+
+getopts("h:n:u:p:i:");
+
+$delay = $opt_i;
+$port = $opt_n;
+$server = $opt_h;
+$user = $opt_u;
+$pwd = $opt_p;
+
+$cnt = 0;
+
+$SIG{INT} = sub {
+
+	$t1 = gettimeofday - $t0;
+	print <<"EOM";
+
+
+$cnt	successful connects
+
+in	$t1 seconds
+
+EOM
+
+exit;
+
+};
+
+$SIG{PIPE} = "IGNORE";
+
+$server = $pop3_server unless $server =~ /[\d\.]{3}\d+/;
+$port = $pop3_port unless $port =~ /^\d+$/;
+$user = $user_name unless $user =~ /^\s+/;
+$pwd = $password unless $pwd =~ /^\s+/;
+$delay = $interval unless $delay > .1;
+
+$pop3_serveraddr = inet_aton($server);
+$paddr = sockaddr_in($port, $pop3_serveraddr);
+$proto = getprotobyname('tcp');
+
+$| = 1;
+
+$t0 = gettimeofday;
+
+while (1) {
+
+	socket(SERVER, PF_INET, SOCK_STREAM, $proto);
+	connect(SERVER, $paddr);
+	select((select(SERVER),$| = 1)[0]);
+
+	$greeting = <SERVER>;
+	print SERVER "USER $user\n";
+	$response = <SERVER>;
+	print SERVER "PASS $pwd\n";
+	$response = <SERVER>;
+	chomp $response;
+	print SERVER "QUIT\n";
+	$bye = <SERVER>;
+	close SERVER;
+
+	sleep $delay;
+
+	if ($response =~ /^\+OK /) {
+		++$cnt;
+		print "$cnt\t $response\r";
+	}
+	else {
+		print "$cnt\t FAILED!\r";
+	 	sleep 1;
+	}
+
+}
+
+=head1 NAME
+
+mpopd_test - a script to test an mpopd POP3 server
+
+=head1 SYNOPSIS
+
+mpopd_test [B<-h> host] [B<-n> port] [B<-u> user] [B<-p> password] [B<-i> interval]
+
+B<Ctrl-C> exits the test and prints a summary.
+
+=head1 DESCRIPTION
+
+Test a POP3 server by connecting, authenticating and quiting
+repeatedly at (short) intervals. Prints a running count of
+successfull connections, so do not run in the backround :)
+
+The configuration can be hard-code in the CONFIG section at the
+top of the mpopd_test script.
+
+Any command line arguments will override those set in the  scripts
+hard-coded configuration.
+
+=head1 OPTIONS
+
+B<-h> B<host>
+
+Connect to the POP3 server on <host>
+
+B<-n> B<port>
+
+Start the server on port <port>
+
+B<-u> B<user>
+
+Use the mailbox belonging to <user>
+
+B<-p> B<password>
+
+The password for the B<user> mailbox
+
+B<-i>
+
+Set the interval between connects
+
+=cut
+
+###################  BOTTOM LINE  ###########################

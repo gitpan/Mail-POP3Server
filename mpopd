@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+
+# mpopd v2.21 14 March 2001
+my $VERSION = "2.21";
+# (c) Mark Tiramani 1998-2001 markjt@fredo.co.uk
+#
+# mpopd is a wrapper script for the Mail::POP3Server module
+#
+# See man (3) Mail::POP3Server
+#
+
+########################  CONFIG  #################################
+
+#### full "/path/filename" of the mpopd config file
+my $config_file = "/usr/local/mpopd/mpopd.conf";
+
+#### Load optional modules required for crypt_MD5 passwords or PAM
+#### Uncomment as required. (Slackware 7.x does not need Crypt::PasswdMD5)
+#use Crypt::PasswdMD5;
+#use Authen::PAM;
+
+######################  END OF CONFIG  ############################
+
+use strict;
+use Mail::POP3Server;
+
+#### Use setsid so mpopd can set a new session to fully detach.
+use POSIX qw(setsid);
+
+#### Just print the version number and exit if $ARGV[0] ~ -v
+if ($ARGV[0] && $ARGV[0] =~ /^-{0,2}v/i) {
+	print "\nmpopd V$VERSION\n\n";
+	exit(0);
+}
+
+#### Accept a port to bind to as the first argument, for special purposes
+my $port;
+if ($ARGV[0] =~ /^\d{3,4}$/) {
+	$port = $ARGV[0];
+}
+#### Try and display the pod docs and exit
+elsif ($ARGV[0]) {
+	my @user = getpwnam "mail";
+	$> = $user[2];
+	$< = $user[2] || die "Sorry, could not run perldoc for you\nPlease run perldoc mpopd\n\n";
+	system "perldoc Mail:POP3Server";
+	exit(0);
+}
+
+#### Check if we are being called by inetd. If we are then just run StartPOP3Server().
+#### Otherwise mpopd detaches itself, sets up CLIENT/SERVER sockets and waits for
+#### clients before forking.
+if (my $paddr = getpeername STDIN) {
+	my $config_read = ReadConfig($config_file);
+	die $config_read unless $config_read == 1;
+	StartPOP3Server(1,$paddr,$port);
+	exit;
+}
+else {
+	my $config_read = ReadConfig($config_file);
+	die $config_read unless $config_read == 1;
+	#### Completely detach ourselves from any controlling service/terminal
+	setsid();
+	#### Start the POP3 server parent daemon
+	StartDaemon($port);
+}
+
+###################  BOTTOM LINE  ###########################

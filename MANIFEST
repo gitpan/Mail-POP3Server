@@ -1,0 +1,14 @@
+Artistic                    The 'Artistic' license
+MANIFEST
+Makefile.PL
+POP3Server.pm               The main server module, loaded by mpopd
+README
+mpopd                       The POP3 server wrapper script
+mpopd.conf                  The main configuration file
+mpopd_allow_deny            Host-based access rules file
+mpopd_password_plugin       Sample passord auth plugin
+mpopd_test                  Script to benchmark, thrash mpopd
+mpopd_trusted               Trusted networks, no reverse name lookup
+mpopd_username_plugin       Sample username auth plugin
+mpopdctl                    Script to start, stop, restart... the daemon
+mpopdstats                  Basic per-user usage stats reporting
